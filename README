@@ -1,0 +1,151 @@
+README EnviroVision
+Roger Fong
+
+//--Main Repository--//
+a) mkdir /home/fa
+b  cd /home/fa
+a) git clone https://github.com/(TODO)
+
+Note: Current all Makefiles assume home directory /home/fa, but you can change this yourself of course
+    (or just change all instances of "/home/fa" to "~")
+
+//——Required libraries——//
+*Python3*
+*CMake*
+
+*OpenCV 3 or higher* (Linker flags: pkg-config opencv --cflags --libs)
+    -Must be built and installed from source, see https://docs.opencv.org/trunk/d7/d9f/tutorial_linux_install.html
+    -Make sure you build WITH_V4L=ON in the CMake args
+    -You may need to still “sudo apt-get install” and link to some extra libraries:
+        ffmpeg
+        swscale
+        v4l-utils (-l4vl2 flag necessary)
+    -Depending on the size of your SDCard you may need to store the OpenCV source and build elsewhere as they take up 4 gigs. Nano PI NEO Plus eMMC is only 8 gb.
+
+*CSCore*
+*WPILib*
+*NTUtil*
+(Linker flags: -lcscore -lwpiutil -lntcore)
+These libraries are for camera settings and http streaming. All 3 can downloaded via: 
+a) git clone https://github.com/(TODO)
+b) build via CMake and make files in main directory
+(Based off of git@github.com:ThadHouse/CmakeWpilib.git but it is recommended to use the EnviroVision version as a number of changes were made to fix build issues and expose camera disconnecting to the CSCore API)
+
+
+*wiringNP*:
+Library for communicating with IMU
+a) git clone https://github.com/friendlyarm/WiringNP
+b) cd WiringNP/
+c) chmod 755 build
+d) ./build
+Linker flags: -lwiringPi -lpthread
+
+//——Camera and IMU Configuration——//
+*Getting available camera parameters via CSCore*
+To list available usb camera parameters build and run enum_usb project: EnviroVision/cscore_standalone/examples/enum_usb
+
+For our FA-CAM 202 cameras (listed below) relevant parameters are:
+  -white_balance_temperature_auto
+  -white_balance_temperature
+  -brightness
+  -exposure_auto
+  -hue
+  -saturation
+  -contrast
+  -gamma
+  -sharpness
+  -exposure_absolute
+Dimensions of frame adjustable via the FRAME_WIDTH and FRAME_HEIGHT global variables in envirovision.cpp
+
+*Camera and IMU settings*
+Settings can then be adjusted on startup in envirovision.cpp. See setupIMU() and setupCamera()
+IMU settings can also be set via MTManager on Windows and then skipped in envirovision by setting IMU_CONFIG=0
+For now all we really need to do is set BaudRate to 115200.
+
+Note: If you're having trouble getting the IMU to output you may want to just try running it once over USB on MTManager to get initial setup done and view the output.
+
+*Envirovision Parameters*
+There are a number of “#define”s at the top of envirovision.cpp. See comments for use.
+Default Release configuration:
+#define CAMERA 1        // Enable Camera
+#define IMU 1           // Enable IMU (if CAMERA == 0, main loop will just print RPY values)
+#define DEBUG 0         // Enable Debug Messages
+#define IMU_CONFIG 0    // Enable IMU configuring (only needs to be run once / or over MT Manager instead)
+#define PRINT_FPS 0     // Enable printing of FPS
+#define HTTP_STREAM 0   // Enable Camera stream over SSH
+#define HTTP_NERUAL 0   // Enable visualization of visual network
+
+//——Visual Network Config——//
+TODO: See visualConfig.h
+
+//——Camera Calibration——//
+Located in Envirovision/Calibrate/
+*Requires OpenCV
+Note: I built the file on XCode on mac but you can build main.cpp with a simple g++ command, i.e:
+g++ main.cpp -o main $(INCLUDE_DIRS) pkg-config opencv --cflags --libs -std=gnu++11
+
+
+-The calibration code looks through a directory of checkboard calibration images, at which point you can either manually or automatically set the corner points.
+-It then computes the resulting intrinsic and distortion coefficients and saves them to calibrate.xml which will be read by envirovision.
+-The camera calibrate.xml provided with the EnviroVision repository reflects the hardware listed below.
+
+//——Hardware——//
+*Main Board: Nano Pi NEO Plus 2*
+    I chose to flash the eMMC with an Ubuntu Xenial Core image
+    See http://wiki.friendlyarm.com/wiki/index.php/NanoPi_NEO_Plus2#Flash_Image_to_eMMC
+    If you're working from a mac you can use something free like "Etcher"
+
+    Default User: root
+    Default Password: fa
+    Getting Wifi Working on StaticIP: Ask Alessandro Crespi for help...
+
+    To backup eMMC to an SD-Card:
+    dd if=/dev/(InputEMMC) of=/dev/(OutputSDCard) conv=noerror,sync
+    You'll have to figure out which device is which (usually eMMC is mmcblk0 and SDCard is mmcblk1)
+    You should definitely double check this though or risk erasing your drive.
+
+*IMU: MTi-1s-Dev* 
+    Connected to UART1
+    Pins 1 and 3 ON, rest are OFF
+    Device /dev/ttyS1
+    Baudrate: 115200
+    PINS: NanoPI <-> XSens
+          3.3V <-> VDD
+          GND <-> GND
+          UART1_TX <-> UART_RX
+          UART1_RX <-> UART_TX
+
+*2x Cameras: FA-CAM 202*
+    Left and Right camera connected to USB 0 and 1 respectively
+    Left Camera Device /dev/video0
+    Right Camera Device /dev/video1
+    (Device naming is order dependent, plug left in first. If already plugged in USB1 -> video0, USB2 -> video1)
+
+*2x Lens: 185 degree, 1/4” fisheye lenses*
+    https://www.aliexpress.com/item/CCTV-Lens-1-4-3MP-HD-360-panoramic-fisheye-lens-diameter-17mm-hat-head-surveillance-camera/32619322865.html
+
+*2x Lens base*
+        Above lenses do not fit the FA-CAM202’s default lens base.
+        https://www.aliexpress.com/item/M12-lens-mount-ABS-lens-mount-camera-lens-mount-the-ABS-lens-holder-Fixed-Pitch-18MM/1319963751.html?spm=2114.search0104.8.3.zrnVGI
+
+Note: Make sure nano pi is plugged into a proper power source, not just the USB2UART Debug port.
+Otherwise with both cameras on there the board will sometimes randomly shut off in a bad state and you will have to unplug everything and restart, and then plug everything back in (a bit difficult if cameras are soldered on).
+
+//——Running Envirovision——//
+a) cd /home/fa/EnviroVision
+a) make
+b) ./envirovision
+
+//--Logging and Visualization--//
+To see stream from videos, make sure HTTP_STREAM=1 in envirovision.cpp
+Go to http://staticIP:8000
+For example current IP is set to 192.168.21.135 on Biorob Local, navigate to http://192.168.21.135:8000 in browser (tested on chrome and firefox)
+
+Note: Performance is highly dependent on the local network strength as well as resolution of output:
+      Currently limited to a 640x120 window (combined width of left and right cameras, half the height since that’s all we process)
+
+To see output from the Visual Network, visit http://staticIP:8080, make sure HTTP_NEURAL=1 in envirovision.cpp
+
+
+
+
