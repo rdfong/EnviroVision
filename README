@@ -62,7 +62,12 @@ Settings can then be adjusted on startup in envirovision.cpp. See setupIMU() and
 IMU settings can also be set via MTManager on Windows and then skipped in envirovision by setting IMU_CONFIG=0
 For now all we really need to do is set BaudRate to 115200.
 
-Note: If you're having trouble getting the IMU to output you may want to just try running it once over USB on MTManager to get initial setup done and view the output.
+--I could not get setting IMU configuration parameters from the nano PI working.
+I tried sending the reset and gotoConfig messages. The nanopi does seem to be sending, and the IMU does seem to be receiving,
+but it looks like the message just gets ignored. According to MTi forum, my connections seem okay too. 
+So until that get sorted out, it's best to just leave IMU_CONFIG=0 and configure over MT Manager--
+
+Note: If you're having trouble getting the IMU to output at all you may want to just try running it once over USB on MTManager to get initial setup done and view the output.
 
 *Envirovision Parameters*
 There are a number of “#define”s at the top of envirovision.cpp. See comments for use.
@@ -73,7 +78,6 @@ Default Release configuration:
 #define IMU_CONFIG 0    // Enable IMU configuring (only needs to be run once / or over MT Manager instead)
 #define PRINT_FPS 0     // Enable printing of FPS
 #define HTTP_STREAM 0   // Enable Camera stream over SSH
-#define HTTP_NERUAL 0   // Enable visualization of visual network
 
 //——Visual Network Config——//
 TODO: See visualConfig.h
@@ -144,7 +148,6 @@ For example current IP is set to 192.168.21.135 on Biorob Local, navigate to htt
 Note: Performance is highly dependent on the local network strength as well as resolution of output:
       Currently limited to a 640x120 window (combined width of left and right cameras, half the height since that’s all we process)
 
-To see output from the Visual Network, visit http://staticIP:8080, make sure HTTP_NEURAL=1 in envirovision.cpp
 
 
 
