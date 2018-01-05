@@ -27,7 +27,6 @@ using namespace std::chrono;
 #define IMU_CONFIG 0    // Enable IMU configuring (only needs to be run once / or over MT Manager instead)
 #define PRINT_FPS 1     // Enable printing of FPS
 #define HTTP_STREAM 1   // Enable Camera stream over SSH
-#define HTTP_NEURAL 0   // Enable streaming of visual network results
 
 #define FRAME_WIDTH 320
 #define FRAME_HEIGHT 240
